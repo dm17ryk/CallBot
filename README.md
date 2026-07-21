@@ -39,6 +39,7 @@ adb ... --es cmd recstart --es mode auto --es name run1
        # modes: auto|voicecall|downlink|uplink|voicereco|voicecomm|mic|acoustic
 adb ... --es cmd recstop
 adb ... --es cmd setrecdir --es path /sdcard/CallBot
+adb ... --es cmd settrack --es file /sdcard/callbot_talk.mp3   # default track for `play` with no file
 adb ... --es cmd reset
 ```
 
