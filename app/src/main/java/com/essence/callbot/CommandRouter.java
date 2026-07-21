@@ -85,6 +85,13 @@ public final class CommandRouter {
                     return ack("setrecdir", null);
                 }
 
+                case "settrack": {
+                    String file = b.getString("file", "");
+                    if (file.isEmpty()) return err("settrack", "missing --es file");
+                    Prefs.setSoundtrack(file);
+                    return ack("settrack", null);
+                }
+
                 case "reset":
                     SoundtrackPlayer.get().stop();
                     RecorderService.stopRec(ctx);
