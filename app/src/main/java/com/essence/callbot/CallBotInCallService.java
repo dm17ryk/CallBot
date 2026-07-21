@@ -2,6 +2,7 @@ package com.essence.callbot;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -25,7 +26,8 @@ public class CallBotInCallService extends InCallService {
     private static HandlerThread sDtmfThread;
     private static Handler sDtmf;
 
-    private final Call.Callback mCallback = new Call.Callback() {
+    /** Named class (not anonymous): d8 8.2 crashes parsing anonymous field-initializer classes. */
+    private static final class StateCallback extends Call.Callback {
         @Override
         public void onStateChanged(Call call, int state) {
             String name = stateName(state);
@@ -37,7 +39,9 @@ public class CallBotInCallService extends InCallService {
                 StatusStore.get().setCallStartElapsed(0);
             }
         }
-    };
+    }
+
+    private final StateCallback mCallback = new StateCallback();
 
     @Override
     public void onCreate() {
@@ -61,7 +65,7 @@ public class CallBotInCallService extends InCallService {
         super.onCallAdded(call);
         sActiveCall = call;
         call.registerCallback(mCallback);
-        int state = call.getDetails().getState();
+        int state = stateOf(call);
         String number = numberOf(call);
         EventLog.log("TELECOM", "call added: " + number + " state=" + stateName(state));
         StatusStore.get().setCallState(stateName(state), number);
@@ -76,7 +80,7 @@ public class CallBotInCallService extends InCallService {
             EventLog.log("TELECOM", "auto-answer in " + delay + " ms");
             sMain.postDelayed(() -> {
                 Call c = sActiveCall;
-                if (c != null && c.getDetails().getState() == Call.STATE_RINGING) {
+                if (c != null && stateOf(c) == Call.STATE_RINGING) {
                     c.answer(VideoProfile.STATE_AUDIO_ONLY);
                 }
             }, delay);
@@ -182,6 +186,13 @@ public class CallBotInCallService extends InCallService {
     }
 
     // --- helpers -----------------------------------------------------------
+
+    /** Call.Details.getState() exists only since API 31; fall back below that. */
+    @SuppressWarnings("deprecation")
+    static int stateOf(Call c) {
+        if (Build.VERSION.SDK_INT >= 31) return c.getDetails().getState();
+        return c.getState();
+    }
 
     static String numberOf(Call call) {
         Uri h = call.getDetails().getHandle();
