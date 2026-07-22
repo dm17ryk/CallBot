@@ -53,26 +53,29 @@ app/permission layer**, so it needs **no root and no app permission**:
 - Downlink (far end) comes out the headset output → PC captures it.
 - Uplink is taken from the headset **mic** → PC drives it (inject / delayed loopback).
 
-Requirements: a **4-pole CTIA headset** interface with a live **mic** pin (a 3-pole
-headphone adapter leaves uplink on the phone's internal mic — no good), and on jackless
-phones (POCO X5 Pro, Pixel 7a/8a) it must be an **active DAC** adapter (passive analog
-over USB-C is dead on modern phones). Bench-verify once that the *cellular* uplink follows
-to the external mic on our phone (strong indirect evidence, no model-specific doc).
+Requirements: a **4-pole CTIA headset** connection with a live **mic** pin (a 3-pole
+headphone plug leaves uplink on the phone's internal mic — no good). **The POCO X5 Pro has
+a real 3.5mm jack**, so we tap it directly with a TRRS splitter — no DAC adapter needed
+(only jackless phones like the Pixel 7a/8a would need an active-DAC USB-C headset adapter).
+Bench-verify once that the *cellular* uplink follows to the external mic on our phone
+(strong indirect evidence, no model-specific doc).
 
 **Consequence:** this rig gives injection **and** two-direction recording with no root, and
 is *more* capable than root (Tensor has no rooted uplink-injection path). Root/BCR remains
 only a "nice-to-have" for a pristine, fully-digital both-direction on-phone recording.
 
-### Recommended rigs
-- **Cleanest (~$465), fully digital, no analog level/bias work:** RØDECaster Duo (~$450) —
-  phone connects **USB-C↔USB-C**, appears as a USB headset with mix-minus (kills echo), and
-  is simultaneously a USB interface to the PC.
-- **Budget (~$65), analog path:** UGREEN USB-C→3.5mm **DAC+Mic** adapter (~$15) + 4-pole TRRS
-  mic/headphone splitter (~$6) + Behringer UCA202 or ~$10 USB sound card + inline mic-level
-  pad/DC-block on the inject line (~$5). Gotcha: the mic pin carries bias — PC line-out must
-  be padded to mic level, or the phone clips/mis-detects.
-- **Middle (~$165):** Zoom PodTrak P4 (~$150) + the DAC headset adapter (jackless phone needs
-  a jack to plug into the P4's TRRS port); PC gets a stereo mix.
+### Recommended rigs (POCO X5 Pro has a 3.5mm jack — tap it directly)
+- **Budget, functionally sufficient (~$20):** 4-pole TRRS mic/headphone **splitter** off the
+  phone jack + a cheap PC **USB sound card** (line-in captures downlink; output feeds the
+  phone mic). We control uplink content in software, so hardware mix-minus is not required.
+  Gotcha: the mic pin carries bias — pad the PC output to mic level or the phone clips.
+- **Turnkey, no level-fiddling (~$150):** **Zoom PodTrak P4** — has a dedicated TRRS **phone
+  port with mix-minus** made for exactly this (plug the phone's 3.5mm jack straight in); it is
+  simultaneously a USB interface to the PC.
+- **NOT recommended:** RØDE **Streamer X** (video-capture/streaming console; its TRRS is a
+  *headset input* for a person's headset — wrong direction — and it has no phone channel /
+  mix-minus). RØDECaster Duo (~$450) works but connects the phone over USB-C, not the jack,
+  and is overkill here.
 
 ## Status
 Scoped, **not yet implemented** — waiting on the audio bridge hardware. Loopback + injection
