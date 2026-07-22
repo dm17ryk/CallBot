@@ -31,7 +31,15 @@ public final class Prefs {
     public static String recDirPath()             { return sp.getString("rec_dir_path", ""); }
     public static void setRecDirPath(String p)    { sp.edit().putString("rec_dir_path", p).apply(); }
 
+    /** Record every call automatically (start on ACTIVE, stop on call end). */
+    public static boolean autoRecord()            { return sp.getBoolean("auto_record", true); }
+    public static void setAutoRecord(boolean on)  { sp.edit().putBoolean("auto_record", on).apply(); }
+
     // --- soundtrack ---
+    /** Injection mode: auto | telephony | voicecomm | acoustic. */
+    public static String playVia()                { return sp.getString("play_via", "auto"); }
+    public static void setPlayVia(String v)       { sp.edit().putString("play_via", v).apply(); }
+
     /** content:// URI or plain /sdcard path of the default soundtrack file. */
     public static String soundtrack()             { return sp.getString("soundtrack", ""); }
     public static void setSoundtrack(String s)    { sp.edit().putString("soundtrack", s).apply(); }

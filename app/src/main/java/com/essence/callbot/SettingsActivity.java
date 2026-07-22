@@ -22,7 +22,7 @@ public class SettingsActivity extends Activity {
     private static final String[] REC_MODES =
             {"auto", "voicecall", "downlink", "uplink", "voicereco", "voicecomm", "mic", "acoustic"};
 
-    private Switch mAutoAnswer;
+    private Switch mAutoAnswer, mAutoRecord;
     private EditText mDelay, mTalk, mPause;
     private Spinner mRecMode;
     private TextView mRecDir, mTrack;
@@ -33,6 +33,7 @@ public class SettingsActivity extends Activity {
         setContentView(R.layout.activity_settings);
 
         mAutoAnswer = findViewById(R.id.sw_autoanswer);
+        mAutoRecord = findViewById(R.id.sw_autorecord);
         mDelay = findViewById(R.id.edit_delay);
         mTalk = findViewById(R.id.edit_talk);
         mPause = findViewById(R.id.edit_pause);
@@ -46,6 +47,7 @@ public class SettingsActivity extends Activity {
 
         // current values
         mAutoAnswer.setChecked(Prefs.autoAnswerOn());
+        mAutoRecord.setChecked(Prefs.autoRecord());
         mDelay.setText(String.valueOf(Prefs.autoAnswerDelayMs()));
         mTalk.setText(String.valueOf(Prefs.talkMs()));
         mPause.setText(String.valueOf(Prefs.pauseMs()));
@@ -72,6 +74,7 @@ public class SettingsActivity extends Activity {
 
         findViewById(R.id.btn_save).setOnClickListener(v -> {
             Prefs.setAutoAnswer(mAutoAnswer.isChecked(), parse(mDelay, 0));
+            Prefs.setAutoRecord(mAutoRecord.isChecked());
             Prefs.setRecMode(REC_MODES[mRecMode.getSelectedItemPosition()]);
             Prefs.setCadence(parse(mTalk, 0), parse(mPause, 0));
             EventLog.log("GUI", "settings saved: autoAnswer=" + mAutoAnswer.isChecked()

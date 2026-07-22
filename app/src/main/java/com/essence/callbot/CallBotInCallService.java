@@ -35,6 +35,11 @@ public class CallBotInCallService extends InCallService {
             StatusStore.get().setCallState(name, numberOf(call));
             if (state == Call.STATE_ACTIVE) {
                 StatusStore.get().setCallStartElapsed(SystemClock.elapsedRealtime());
+                CallBotInCallService svc = sInstance;
+                if (svc != null && Prefs.autoRecord()) {
+                    EventLog.log("REC", "auto-record on (call ACTIVE)");
+                    RecorderService.startRec(svc, Prefs.recMode(), "auto");
+                }
             } else if (state == Call.STATE_DISCONNECTED) {
                 StatusStore.get().setCallStartElapsed(0);
             }

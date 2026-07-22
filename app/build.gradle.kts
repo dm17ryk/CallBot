@@ -10,8 +10,8 @@ android {
         applicationId = "com.essence.callbot"
         minSdk = 29         // Android 10+
         targetSdk = 34      // Android 14 (POCO X5 Pro 5G / HyperOS 2.0)
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
     }
 
     buildTypes {

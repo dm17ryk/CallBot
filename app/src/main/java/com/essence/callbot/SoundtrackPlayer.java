@@ -2,21 +2,27 @@ package com.essence.callbot;
 
 import android.content.Context;
 import android.media.AudioAttributes;
+import android.media.AudioDeviceInfo;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 
 /**
- * Injects a "person talking" soundtrack into the call uplink.
+ * Plays the "person talking" soundtrack so the FAR END of the call hears it.
  *
- * Uses USAGE_VOICE_COMMUNICATION so the audio is mixed into the voice-call
- * TX path and reaches the far end as RTP (pattern proven on the dtmf_apk
- * PlayWavActivity — works even while the call mic is muted).
+ * Injection reality by device generation:
+ *  - Old Poco F1 (Android 10): USAGE_VOICE_COMMUNICATION playback was mixed into
+ *    the voice-call TX by the HAL ("voicecomm" mode) — the dtmf_apk trick.
+ *  - POCO X5 Pro (Android 14 / HyperOS 2): that path plays only LOCALLY. Two options:
+ *      "telephony" — route the player to the AudioDeviceInfo.TYPE_TELEPHONY output
+ *                    if the HAL exposes it (clean uplink injection, no echo);
+ *      "acoustic"  — unmute the call mic, force speaker route, play as loud media:
+ *                    the mic picks it up -> uplink. Always works; same-room echo.
  *
+ * via modes: auto (telephony if available, else acoustic) | telephony | voicecomm | acoustic.
  * MediaPlayer decodes MP3/AAC/OGG/FLAC/WAV/AMR natively.
- * Optional cadence: play talk_ms, pause pause_ms, repeat — simulates
- * conversational speech instead of a continuous wall of sound.
  */
 public final class SoundtrackPlayer {
     private static final SoundtrackPlayer INSTANCE = new SoundtrackPlayer();
@@ -26,6 +32,10 @@ public final class SoundtrackPlayer {
     private boolean mCadenceTalking;
     private int mTalkMs, mPauseMs;
     private final Runnable mCadenceTick = this::cadenceTick;
+    // last start args, for the auto-mode telephony->acoustic error fallback
+    private Context mCtx;
+    private String mFile, mMode;
+    private boolean mLoop, mAutoRequested;
 
     private SoundtrackPlayer() {
         HandlerThread t = new HandlerThread("callbot-player");
@@ -35,18 +45,56 @@ public final class SoundtrackPlayer {
 
     public static SoundtrackPlayer get() { return INSTANCE; }
 
-    /** Start playback. Returns null (errors are async -> status/last_error). */
+    private static AudioDeviceInfo findTelephonyOut(AudioManager am) {
+        for (AudioDeviceInfo d : am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+            if (d.getType() == AudioDeviceInfo.TYPE_TELEPHONY) return d;
+        }
+        return null;
+    }
+
+    /** Start playback. Errors are async -> status/last_error + event log. */
     public synchronized String start(Context ctx, String fileOrUri, boolean loop,
-                                     int talkMs, int pauseMs) {
+                                     int talkMs, int pauseMs, String via) {
         final Context app = ctx.getApplicationContext();
+        final String reqVia = (via == null || via.isEmpty()) ? "auto" : via.toLowerCase();
         mWorker.post(() -> {
             stopLocked();
             try {
+                synchronized (SoundtrackPlayer.this) {
+                    mCtx = app;
+                    mFile = fileOrUri;
+                    mLoop = loop;
+                    mTalkMs = talkMs;
+                    mPauseMs = pauseMs;
+                    mAutoRequested = "auto".equals(reqVia);
+                }
+                AudioManager am = app.getSystemService(AudioManager.class);
+                AudioDeviceInfo telephony = findTelephonyOut(am);
+
+                String mode = reqVia;
+                if ("auto".equals(mode)) mode = telephony != null ? "telephony" : "acoustic";
+                if ("telephony".equals(mode) && telephony == null) {
+                    EventLog.log("AUDIO", "no TYPE_TELEPHONY output on this device -> acoustic");
+                    mode = "acoustic";
+                }
+
                 MediaPlayer p = new MediaPlayer();
-                p.setAudioAttributes(new AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build());
+                if ("acoustic".equals(mode)) {
+                    // far end hears it via the mic: unmute + speaker + loud media stream
+                    CallBotInCallService.setMute(false);
+                    CallBotInCallService.setRoute("speaker");
+                    am.setStreamVolume(AudioManager.STREAM_MUSIC,
+                            am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
+                    p.setAudioAttributes(new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build());
+                } else {
+                    p.setAudioAttributes(new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build());
+                }
                 if (fileOrUri.startsWith("content:")) {
                     p.setDataSource(app, Uri.parse(fileOrUri));
                 } else {
@@ -59,12 +107,28 @@ public final class SoundtrackPlayer {
                         synchronized (SoundtrackPlayer.this) { stopLocked(); }
                     }
                 });
+                final String startedMode = mode;
                 p.setOnErrorListener((mp, what, extra) -> {
-                    StatusStore.get().setLastError("soundtrack error what=" + what + " extra=" + extra);
-                    synchronized (SoundtrackPlayer.this) { stopLocked(); }
+                    synchronized (SoundtrackPlayer.this) {
+                        stopLocked();
+                        if ("telephony".equals(startedMode) && mAutoRequested) {
+                            // HAL refused the telephony TX output (e.g. -19 on HyperOS):
+                            // retry with the guaranteed acoustic path
+                            EventLog.log("AUDIO", "telephony playback failed (" + what + "/" + extra
+                                    + ") -> acoustic fallback");
+                            start(mCtx, mFile, mLoop, mTalkMs, mPauseMs, "acoustic");
+                        } else {
+                            StatusStore.get().setLastError(
+                                    "soundtrack error what=" + what + " extra=" + extra);
+                        }
+                    }
                     return true;
                 });
                 p.prepare();
+                if ("telephony".equals(mode)) {
+                    boolean ok = p.setPreferredDevice(telephony);
+                    EventLog.log("AUDIO", "telephony TX routing " + (ok ? "accepted" : "REJECTED"));
+                }
                 p.start();
                 synchronized (SoundtrackPlayer.this) {
                     mPlayer = p;
@@ -73,12 +137,12 @@ public final class SoundtrackPlayer {
                     if (talkMs > 0 && pauseMs > 0) {
                         mCadenceTalking = true;
                         mWorker.postDelayed(mCadenceTick, talkMs);
-                        StatusStore.get().setPlayback("talking", fileOrUri);
+                        StatusStore.get().setPlayback("talking(" + mode + ")", fileOrUri);
                     } else {
-                        StatusStore.get().setPlayback(loop ? "looping" : "playing", fileOrUri);
+                        StatusStore.get().setPlayback((loop ? "looping(" : "playing(") + mode + ")", fileOrUri);
                     }
                 }
-                EventLog.log("AUDIO", "soundtrack start: " + fileOrUri
+                EventLog.log("AUDIO", "soundtrack start via=" + mode + ": " + fileOrUri
                         + (loop ? " loop" : "")
                         + (talkMs > 0 && pauseMs > 0 ? " cadence=" + talkMs + "/" + pauseMs : ""));
             } catch (Exception e) {

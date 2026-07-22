@@ -60,8 +60,20 @@ public final class CommandRouter {
                     boolean loop = b.getBoolean("loop", false);
                     int talkMs = b.getInt("talk_ms", Prefs.talkMs());
                     int pauseMs = b.getInt("pause_ms", Prefs.pauseMs());
-                    String e = SoundtrackPlayer.get().start(ctx, file, loop, talkMs, pauseMs);
+                    String via = b.getString("via", Prefs.playVia());
+                    String e = SoundtrackPlayer.get().start(ctx, file, loop, talkMs, pauseMs, via);
                     return ack("play", e);
+                }
+
+                case "setvia": {
+                    String v = b.getString("via", "auto");
+                    Prefs.setPlayVia(v);
+                    return ack("setvia", null);
+                }
+
+                case "autorecord": {
+                    Prefs.setAutoRecord(b.getBoolean("on", true));
+                    return ack("autorecord", null);
                 }
 
                 case "stopplay":

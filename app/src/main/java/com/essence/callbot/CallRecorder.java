@@ -1,12 +1,14 @@
 package com.essence.callbot;
 
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.provider.DocumentsContract;
+import android.provider.MediaStore;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -230,6 +232,30 @@ public final class CallRecorder {
             } catch (Exception e) {
                 StatusStore.get().setLastError("export to " + path + " failed: " + e);
             }
+        }
+        // default: also publish to MediaStore Music/CallBot so the file is visible
+        // in any on-phone file manager (and at /sdcard/Music/CallBot for adb pull)
+        try {
+            ContentResolver cr = ctx.getContentResolver();
+            ContentValues v = new ContentValues();
+            v.put(MediaStore.Audio.Media.DISPLAY_NAME, src.getName());
+            v.put(MediaStore.Audio.Media.MIME_TYPE, "audio/wav");
+            v.put(MediaStore.Audio.Media.RELATIVE_PATH, "Music/CallBot");
+            v.put(MediaStore.Audio.Media.IS_PENDING, 1);
+            Uri uri = cr.insert(MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), v);
+            if (uri != null) {
+                try (InputStream in = new FileInputStream(src);
+                     OutputStream os = cr.openOutputStream(uri)) {
+                    copy(in, os);
+                }
+                v.clear();
+                v.put(MediaStore.Audio.Media.IS_PENDING, 0);
+                cr.update(uri, v, null, null);
+                return "/sdcard/Music/CallBot/" + src.getName()
+                        + " (also " + src.getAbsolutePath() + ")";
+            }
+        } catch (Exception e) {
+            StatusStore.get().setLastError("MediaStore export failed: " + e);
         }
         return src.getAbsolutePath();
     }

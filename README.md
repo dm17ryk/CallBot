@@ -53,17 +53,23 @@ Python driver (in the CP_ESP32 repo): `Tools/callbot_driver.py`
 - Status file: `/sdcard/Android/data/com.essence.callbot/files/status.json`
 - A custom recordings folder can be chosen in Settings (copied there on stop).
 
-## Recording reality on an unrooted phone
+## Audio reality on the unrooted POCO X5 Pro (verified live 2026-07-22)
 
-`voicecall`/`downlink`/`uplink` sources need `CAPTURE_AUDIO_OUTPUT`
-(signature|privileged) — they will fail on a stock phone and exist so a future
-rooted/priv-app install works with zero code change. On Android 14 the
-concurrent-capture policy usually **silences** other mic sources during a call;
-the `auto` mode probes each source for ~0.5 s (RMS) and falls through to
-`acoustic` = MIC capture with the call forced to loudspeaker (far end audible
-acoustically). Run `Tools/callbot_verify_recording.py` during a real call to
-measure what this device actually allows — it writes the best mode to
-`Tools/callbot_config.json`.
+**Recording: impossible unrooted.** All app-accessible mic sources are zero-filled
+by Android 14's concurrent-capture policy during cellular calls (668 s capture,
+RMS 0.0, permissions all granted). `voicecall`/`downlink`/`uplink` need
+`CAPTURE_AUDIO_OUTPUT` (signature|privileged) — kept in the fallback chain so a
+future **rooted** phone works with zero code change.
+
+**Uplink "talker" injection: also impossible from the phone itself.**
+Telephony-device routing is HAL-refused (error -19); `USAGE_VOICE_COMMUNICATION`
+plays locally only; acoustic self-playback is cancelled from the TX by the
+in-call AEC (the phone's own speaker output is the AEC reference).
+**Working path: play the soundtrack from the bench PC speakers next to the
+phone** — external audio passes the AEC like a real person:
+`python Tools/callbot_driver.py play-pc talk.mp3 --talk 4000 --pause 1500` / `stop-pc`.
+
+Full matrix: CP_ESP32 `docs/findings/CALLBOT-AUDIO-PATHS-2026-07-22.md`.
 
 ## Build
 
