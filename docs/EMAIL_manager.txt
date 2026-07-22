@@ -1,0 +1,65 @@
+Subject: CallBot - automated call-testing rig for the panels (working now; one small hardware request)
+
+Hi [Manager],
+
+I built a tool this week that turns our panel call-testing from a fragile, manual process
+into a fully automated one, and I'd like approval for a small, one-time piece of hardware
+(about $210, no new phone) that completes it. No phone purchase and no phone modification
+are needed.
+
+THE PROBLEM
+Our C8000 call testing needs a phone that answers the panel's emergency calls and behaves
+like a real person on the line. Until now we drove that phone with crude ADB key-presses
+("press 5 to answer"), which was unreliable and - critically - could not send DTMF tones or
+control the call audio at all. That left a whole class of scenarios (far-end disconnect
+codes, simulated conversation, call recording) untestable in an automated way.
+
+WHAT I BUILT - "CALLBOT"
+CallBot is a small app we install as the phone's dialer, controllable entirely from the PC
+(and with a normal dialer screen for manual use). Every action is logged live on screen
+(see the attached screenshots). It already gives us, with no extra hardware:
+  - Reliable call control from the PC - answer / reject / hang up, mute, speaker,
+    auto-answer - no more fragile key-presses.
+  - Real DTMF tones - the capability we were missing.
+  - Live status and event log, plus a scripting interface so it plugs into our automated
+    test suite.
+
+It already produced a concrete result: an unattended overnight run of 161 panel emergency
+calls (varying length, pauses and end-methods) passed 161/161, and it established that
+DTMF "9" reliably ends the panel's call - a detail we need for the open field bug and could
+not test before.
+
+COMPLETING THE RIG - FULL CALL-AUDIO CONTROL FROM THE PC
+The one thing a normal phone blocks (by OS security design, on every modern phone, rooted
+or not) is direct access to the audio of a live call - needed to (a) play speech the panel
+hears and (b) record both sides of the call. Rather than modify a phone, the clean,
+standard solution is a small pro-audio box between the phone and the PC:
+
+Zoom PodTrak P4 + Zoom BTA-2 Bluetooth adapter. The phone pairs to it over Bluetooth (like
+a hands-free car kit), and the PC connects to it by USB. This gives us, from the PC:
+  - Inject audio into the call - play speech/clips so the panel hears a "person talking".
+  - Record both directions of every call to a file on the PC.
+  - Automated conversation simulation - the tool can talk to the panel and reply after a
+    natural, adjustable delay, with no human staying on the line.
+  - Built-in echo cancellation (mix-minus) and full-duplex audio, all wireless to the phone.
+
+WHY THIS IS THE BEST SOLUTION
+  - Phone-agnostic - works with our current phone and any future one, any carrier
+    (Bluetooth hands-free is universal). Nothing is tied to a specific model.
+  - No rooting / no phone modification - nothing that voids warranty, weakens security, or
+    is fragile to OS updates.
+  - Everything runs from the PC - control and audio are centralized, so the whole call
+    scenario is scriptable, repeatable and unattended.
+  - Off-the-shelf, proven hardware - not a hack.
+
+THE REQUEST
+A one-time bench purchase, about $210 total:
+  - Zoom PodTrak P4 ............. call-audio interface between phone and PC .... ~$150
+  - Zoom BTA-2 Bluetooth adapter  wireless, phone-agnostic link to any phone ... ~$60
+No new phone, no software licences, no recurring cost.
+
+Happy to give a live demo anytime. Screenshots attached: the dialer, the in-call controls
+(including the DTMF keypad and record button), and the settings screen.
+
+Thanks,
+Dmitry

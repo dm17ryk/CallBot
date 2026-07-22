@@ -1,0 +1,93 @@
+<!-- Outlook email body. To use: open this file in a browser (Chrome/Edge),
+     Ctrl+A to select all, Ctrl+C, then paste into a new Outlook message.
+     Formatting, bullets and tables carry over. Attach the 3 screenshots from
+     docs/screenshots/ separately. -->
+<div style="font-family:Calibri,'Segoe UI',Arial,sans-serif; font-size:11pt; color:#1b2230; line-height:1.5; max-width:700px;">
+
+  <p>Hi [Manager],</p>
+
+  <p>I built a tool this week that turns our panel call-testing from a fragile, manual
+  process into a fully automated one, and I'd like approval for a small, one-time piece of
+  hardware (about&nbsp;$210, no new phone) that completes it. No phone purchase and no phone
+  modification are needed.</p>
+
+  <p style="font-size:13pt; font-weight:bold; color:#0e7f96; margin-bottom:4px;">The problem</p>
+  <p>Our C8000 call testing needs a phone that answers the panel's emergency calls and
+  behaves like a real person on the line. Until now we drove that phone with crude ADB
+  key-presses ("press 5 to answer"), which was unreliable and &mdash; critically &mdash;
+  <b>could not send DTMF tones or control the call audio at all</b>. That left a whole class
+  of scenarios (far-end disconnect codes, simulated conversation, call recording)
+  untestable in an automated way.</p>
+
+  <p style="font-size:13pt; font-weight:bold; color:#0e7f96; margin-bottom:4px;">What I built &mdash; "CallBot"</p>
+  <p>CallBot is a small app we install as the phone's dialer, controllable entirely from the
+  PC (and with a normal dialer screen for manual use). Every action is logged live on screen
+  (see the attached screenshots). It already gives us, with no extra hardware:</p>
+  <ul style="margin-top:0;">
+    <li><b>Reliable call control from the PC</b> &mdash; answer / reject / hang up, mute,
+    speaker, auto-answer &mdash; no more fragile key-presses.</li>
+    <li><b>Real DTMF tones</b> &mdash; the capability we were missing.</li>
+    <li><b>Live status and event log</b>, plus a scripting interface so it plugs into our
+    automated test suite.</li>
+  </ul>
+  <p>It already produced a concrete result: an unattended overnight run of
+  <b>161 panel emergency calls</b> (varying length, pauses and end-methods) passed
+  <b>161/161</b>, and it established that <b>DTMF "9" reliably ends the panel's call</b>
+  &mdash; a detail we need for the open field bug and could not test before.</p>
+
+  <p style="font-size:13pt; font-weight:bold; color:#0e7f96; margin-bottom:4px;">Completing the rig &mdash; full call-audio control from the PC</p>
+  <p>The one thing a normal phone blocks (by OS security design, on every modern phone,
+  rooted or not) is direct access to the <i>audio</i> of a live call &mdash; needed to
+  (a)&nbsp;play speech the panel hears and (b)&nbsp;record both sides of the call. Rather than
+  modify a phone, the clean, standard solution is a small pro-audio box between the phone and
+  the PC:</p>
+  <p><b>Zoom PodTrak P4 + Zoom BTA-2 Bluetooth adapter.</b> The phone pairs to it over
+  Bluetooth (like a hands-free car kit), and the PC connects to it by USB. This gives us,
+  from the PC:</p>
+  <ul style="margin-top:0;">
+    <li><b>Inject audio into the call</b> &mdash; play speech/clips so the panel hears a
+    "person talking".</li>
+    <li><b>Record both directions of every call</b> to a file on the PC.</li>
+    <li><b>Automated conversation simulation</b> &mdash; the tool can talk to the panel and
+    reply after a natural, adjustable delay, with no human staying on the line.</li>
+    <li>Built-in echo cancellation (mix-minus) and full-duplex audio, all wireless to the
+    phone.</li>
+  </ul>
+
+  <p style="font-size:13pt; font-weight:bold; color:#0e7f96; margin-bottom:4px;">Why this is the best solution</p>
+  <ul style="margin-top:0;">
+    <li><b>Phone-agnostic</b> &mdash; works with our current phone and any future one, any
+    carrier (Bluetooth hands-free is universal). Nothing is tied to a specific model.</li>
+    <li><b>No rooting / no phone modification</b> &mdash; nothing that voids warranty,
+    weakens security, or is fragile to OS updates.</li>
+    <li><b>Everything runs from the PC</b> &mdash; control <i>and</i> audio are centralized,
+    so the whole call scenario is scriptable, repeatable and unattended.</li>
+    <li><b>Off-the-shelf, proven hardware</b> &mdash; not a hack.</li>
+  </ul>
+
+  <p style="font-size:13pt; font-weight:bold; color:#0e7f96; margin-bottom:4px;">The request</p>
+  <p>A one-time bench purchase, about <b>$210</b> total:</p>
+  <table cellpadding="7" cellspacing="0" style="border-collapse:collapse; font-size:11pt; margin-bottom:4px;">
+    <tr style="background:#eef1f5;">
+      <th align="left" style="border:1px solid #c9d0da;">Item</th>
+      <th align="left" style="border:1px solid #c9d0da;">Purpose</th>
+      <th align="right" style="border:1px solid #c9d0da;">Approx.</th>
+    </tr>
+    <tr>
+      <td style="border:1px solid #c9d0da;">Zoom PodTrak P4</td>
+      <td style="border:1px solid #c9d0da;">call-audio interface between phone and PC (record + inject)</td>
+      <td align="right" style="border:1px solid #c9d0da;">$150</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #c9d0da;">Zoom BTA-2 Bluetooth adapter</td>
+      <td style="border:1px solid #c9d0da;">wireless, phone-agnostic connection to any phone</td>
+      <td align="right" style="border:1px solid #c9d0da;">$60</td>
+    </tr>
+  </table>
+  <p>No new phone, no software licences, no recurring cost.</p>
+
+  <p>Happy to give a live demo anytime. Screenshots attached: the dialer, the in-call
+  controls (including the DTMF keypad and record button), and the settings screen.</p>
+
+  <p>Thanks,<br>Dmitry</p>
+</div>
