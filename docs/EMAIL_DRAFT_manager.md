@@ -1,7 +1,7 @@
-# Email draft — CallBot test-automation dialer
+# Email draft — CallBot test-automation rig
 
 **To:** [Manager]
-**Subject:** CallBot — in-house call-automation tool for panel VoIP/alarm testing (status + a small hardware request)
+**Subject:** CallBot — automated call-testing rig for the panels (working now; one small hardware request)
 
 **Attachments:** callbot_dialer.png, callbot_incall.png, callbot_settings.png
 
@@ -9,83 +9,75 @@
 
 Hi [Manager],
 
-I want to share a tool I built this week and get a go-ahead on a small piece of hardware
-that would unlock the rest of it.
+I built a tool this week that turns our panel call-testing from a fragile, manual process
+into a fully automated one, and I'd like approval for a small, one-time piece of hardware
+(~$210, no new phone) that completes it. No phone purchase and no phone modification are
+needed.
 
 ## The problem
 
-Our C8000 call testing depends on driving a real phone that answers the panel's
-emergency calls. Until now we drove an Android phone with raw ADB key presses
-("press 5 to answer, 6 to hang up"). That approach is fragile and, critically,
-**could not send DTMF tones or control call audio** — so a whole class of call
-scenarios (far-end disconnect codes, simulated conversation, call recording) was
-simply not testable in an automated way.
+Our C8000 call testing needs a phone that answers the panel's emergency calls and behaves
+like a real person on the line. Until now we drove that phone with crude ADB key-presses
+("press 5 to answer"), which was unreliable and — critically — **could not send DTMF tones
+or control the call audio at all**. That left a whole class of scenarios (far-end
+disconnect codes, simulated conversation, call recording) untestable in an automated way.
 
 ## What I built — "CallBot"
 
-CallBot is a small Android dialer app we install as the phone's default dialer. It is
-fully controllable over ADB (so it scripts cleanly into our test harness) **and** has a
-normal dialer UI for manual use. Everything a tester or a script does shows up in a
-live, timestamped event log on screen (see screenshots).
+CallBot is a small app we install as the phone's dialer, controllable entirely from the PC
+(and with a normal dialer screen for manual use). Every action is logged live on screen
+(see the attached screenshots). It already gives us, with no extra hardware:
 
-Today it gives us, on the existing bench phone:
+- **Reliable call control from the PC** — answer / reject / hang up, mute, speaker,
+  auto-answer — no more fragile key-presses.
+- **Real DTMF tones** — the capability we were missing.
+- **Live status + event log**, plus a scripting interface so it plugs into our automated
+  test suite.
 
-- **Full call control with no fragile key-presses**: answer / reject / hang up, mute,
-  speaker/earpiece, configurable auto-answer.
-- **Real DTMF tones** — the capability we were missing. This immediately produced a
-  useful result (below).
-- **Simulated "person talking"** into the call (plays an audio clip so the panel hears
-  speech during the call).
-- **Live status + event log**, and a Python driver so it plugs straight into our
-  automated test scripts.
+**It already produced a concrete result:** an unattended overnight run of **161 panel
+emergency calls** (varying length, pauses and end-methods) passed **161/161**, and it
+established that **DTMF "9" reliably ends the panel's call** — a detail we need for the
+open field bug and could not test before.
 
-**First concrete win:** using real DTMF, I ran an unattended overnight campaign of
-**161 panel emergency calls** with varying call length, pauses and end-methods. Result:
-**161/161 passed, no failures**, and I confirmed that **DTMF "9" reliably ends the
-panel's call (58/58)** while "0" does not — a detail that matters for reproducing the
-open field bug and that we could not test before.
+## Completing the rig — full call-audio control from the PC
 
-## What it can and cannot do — and why hardware matters
+The one thing a normal phone blocks (by OS security design, on every modern phone, rooted
+or not) is direct access to the *audio* of a live call — needed to (a) play speech the
+panel hears and (b) record both sides of the call. Rather than modify a phone, the clean,
+standard solution is a small pro-audio box between the phone and the PC:
 
-Some things are blocked by Android itself on a normal (non-rooted) phone, for security
-reasons — not by our code:
+**Zoom PodTrak P4 + Zoom BTA-2 Bluetooth adapter.** The phone pairs to it over Bluetooth
+(like a hands-free car kit), and the PC connects to it by USB. This gives us, from the PC:
 
-| Capability | Current phone (stock) | Rooted Pixel | Rooted Pixel + small USB audio adapter |
-|---|---|---|---|
-| Answer/reject/hang-up, mute, routing | ✅ | ✅ | ✅ |
-| Real DTMF tones | ✅ | ✅ | ✅ |
-| Live status / event log / scripting | ✅ | ✅ | ✅ |
-| Play speech so the panel hears it | ⚠️ only via external PC speaker | ⚠️ same | ✅ clean, digital |
-| **Record both sides of the call to a file** | ❌ blocked by Android | ✅ | ✅ |
-| **Automated "conversation" simulator** (talk to the panel, it replies) | ❌ | ❌ | ✅ |
+- **Inject audio into the call** — play speech/clips so the panel hears a "person talking".
+- **Record both directions of every call** to a file on the PC.
+- **Automated conversation simulation** — the tool can talk to the panel and reply after a
+  natural, adjustable delay, with no human staying on the line.
+- Built-in echo cancellation (mix-minus) and full-duplex audio, all wireless to the phone.
 
-The two ❌ items are exactly what QA and I need for the harder call scenarios (proving
-audio quality, and reproducing the intermittent field bug with realistic two-way audio).
+## Why this is the best solution
+
+- **Phone-agnostic** — works with our current phone and any future one, any carrier
+  (Bluetooth hands-free is universal). Nothing is tied to a specific model.
+- **No rooting / no phone modification** — nothing that voids warranty, weakens security,
+  or is fragile to OS updates.
+- **Everything runs from the PC** — control *and* audio are centralized, so the whole call
+  scenario is scriptable, repeatable and unattended.
+- **Off-the-shelf, proven hardware** — not a hack.
 
 ## The request
 
-1. **A Google Pixel (7a or 8a), unlocked model** — ~$250 (7a) to ~$400 (8a). Rooting a
-   Pixel is officially supported and stable, and it unlocks **two-direction call
-   recording** using a well-known, proven method (no risky custom code). The 7a is
-   perfectly sufficient for our use; the 8a mainly buys longer software support.
-2. *(Optional, ~$30)* a small **USB audio adapter** that lets us inject audio cleanly into
-   the call and build an automated conversation simulator (see below). This is the only
-   way to do it reliably — it is a hardware limitation of all modern phones, rooted or not.
+A one-time bench purchase, ~**$210** total:
 
-Total is a modest, one-time bench cost, and it turns CallBot into a complete,
-unattended call-testing rig.
+| Item | Purpose | ~Price |
+|---|---|---|
+| Zoom PodTrak P4 | call-audio interface between phone and PC (record + inject) | ~$150 |
+| Zoom BTA-2 Bluetooth adapter | wireless, phone-agnostic connection to any phone | ~$60 |
 
-## One idea I'd like to add
+No new phone, no software licences, no recurring cost.
 
-A "smart conversation" mode: a tester (or a script) talks to the panel, and when they
-pause, the tool automatically feeds audio back into the call with a short, adjustable
-delay — simulating a natural back-and-forth conversation without a person needing to
-stay on the line. This is genuinely useful for stress-testing the panel's live-audio
-behavior. It needs the small USB adapter above; I've scoped the design and it's ready to
-build once the hardware is here.
-
-Happy to give a live demo whenever convenient. Screenshots attached: the dialer, the
-in-call controls (including the DTMF keypad and record button), and the settings screen.
+Happy to give a live demo anytime. Screenshots attached: the dialer, the in-call controls
+(including the DTMF keypad and record button), and the settings screen.
 
 Thanks,
 Dmitry

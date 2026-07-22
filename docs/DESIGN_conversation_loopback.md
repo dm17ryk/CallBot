@@ -64,7 +64,16 @@ Bench-verify once that the *cellular* uplink follows to the external mic on our 
 is *more* capable than root (Tensor has no rooted uplink-injection path). Root/BCR remains
 only a "nice-to-have" for a pristine, fully-digital both-direction on-phone recording.
 
-### Recommended rigs (POCO X5 Pro has a 3.5mm jack — tap it directly)
+### CHOSEN rig (2026-07-22): Zoom PodTrak P4 + Zoom BTA-2 Bluetooth adapter
+Phone pairs to the BTA-2 over **Bluetooth hands-free (HFP)** — full-duplex with mix-minus
+(no echo) — and the PC connects to the P4 over USB. Advantages that made it the pick:
+phone-agnostic (any phone/carrier, no cable to the jack), removes the analog mic-bias/level
+gotcha entirely (HFP is digital), cellular-over-BT-HFP routing is universal (lowest risk on
+"does the uplink follow?"), and no rooting. Trade-off: HFP is narrowband (~8-16 kHz) — fine
+for cellular-call testing. One-time ~$210 (P4 ~$150 + BTA-2 ~$60). Manager pitch:
+`docs/EMAIL_DRAFT_manager.md` + `docs/callbot_onepager.html`.
+
+### Other rigs considered (POCO X5 Pro has a 3.5mm jack — could tap it directly)
 - **Budget, functionally sufficient (~$20):** 4-pole TRRS mic/headphone **splitter** off the
   phone jack + a cheap PC **USB sound card** (line-in captures downlink; output feeds the
   phone mic). We control uplink content in software, so hardware mix-minus is not required.
