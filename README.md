@@ -1,6 +1,6 @@
-# CallBot — bench call-debug dialer for the Essence CP benches
+# CallBot — bench call-debug dialer
 
-Fully ADB-controllable Android dialer app (`com.essence.callbot`) used to debug
+Fully ADB-controllable Android dialer app (`com.dm17ryk.callbot`) used to debug
 CP (C8000/C7000) emergency voice calls. Replaces fragile `adb input keyevent`
 control with real Telecom APIs, adds in-call audio injection ("person talking"
 simulation), call recording, and a live GUI event log.
@@ -25,7 +25,7 @@ adb serial `f65b39ae`. Works on any Android 10+ phone (minSdk 29, targetSdk 34).
 All commands are ordered broadcasts — the JSON result prints synchronously:
 
 ```
-adb -s f65b39ae shell am broadcast -p com.essence.callbot -a com.essence.callbot.CMD --es cmd status
+adb -s f65b39ae shell am broadcast -p com.dm17ryk.callbot -a com.dm17ryk.callbot.CMD --es cmd status
 adb ... --es cmd answer
 adb ... --es cmd reject
 adb ... --es cmd hangup
@@ -48,9 +48,9 @@ Python driver (in the CP_ESP32 repo): `Tools/callbot_driver.py`
 
 ## Recordings & logs
 
-- Recordings: `/sdcard/Android/data/com.essence.callbot/files/rec/*.wav`
-- Event logs: `/sdcard/Android/data/com.essence.callbot/files/logs/events_*.log`
-- Status file: `/sdcard/Android/data/com.essence.callbot/files/status.json`
+- Recordings: `/sdcard/Android/data/com.dm17ryk.callbot/files/rec/*.wav`
+- Event logs: `/sdcard/Android/data/com.dm17ryk.callbot/files/logs/events_*.log`
+- Status file: `/sdcard/Android/data/com.dm17ryk.callbot/files/status.json`
 - A custom recordings folder can be chosen in Settings (copied there on stop).
 
 ## Audio reality on the unrooted POCO X5 Pro (verified live 2026-07-22)
@@ -75,16 +75,16 @@ Full matrix: CP_ESP32 `docs/findings/CALLBOT-AUDIO-PATHS-2026-07-22.md`.
 
 Toolchain (already provisioned on the bench PC):
 - JDK 17+ (Temurin 21 on PATH works)
-- Android SDK at `D:\Essence_SC\dev\android-sdk` (platforms;android-34, build-tools;34.0.0)
-- Gradle 8.7 at `D:\Essence_SC\dev\gradle-8.7` (wrapper committed after first `gradle wrapper`)
+- Android SDK at `D:\dm17ryk_SC\dev\android-sdk` (platforms;android-34, build-tools;34.0.0)
+- Gradle 8.7 at `D:\dm17ryk_SC\dev\gradle-8.7` (wrapper committed after first `gradle wrapper`)
 
 ```powershell
-cd D:\Essence_SC\src\CallBot
+cd D:\dm17ryk_SC\src\CallBot
 .\gradlew.bat assembleDebug
 # -> app\build\outputs\apk\debug\app-debug.apk
 ```
 
-`local.properties` (git-ignored) must contain `sdk.dir=D:\\Essence_SC\\dev\\android-sdk`.
+`local.properties` (git-ignored) must contain `sdk.dir=D:\\dm17ryk_SC\\dev\\android-sdk`.
 
 ## Install & one-time phone setup (HyperOS)
 
@@ -94,7 +94,7 @@ python Tools/callbot_driver.py ensure-ready --apk app\build\outputs\apk\debug\ap
 
 That script does, idempotently:
 1. `adb install -t -r app-debug.apk`
-2. `cmd role add-role-holder --user 0 android.app.role.DIALER com.essence.callbot`
+2. `cmd role add-role-holder --user 0 android.app.role.DIALER com.dm17ryk.callbot`
    (falls back to showing the RoleManager dialog — tap "Set as default" once)
 3. `pm grant` RECORD_AUDIO / READ_PHONE_STATE / CALL_PHONE / POST_NOTIFICATIONS
 4. doze whitelist + `appops RUN_IN_BACKGROUND allow`
@@ -109,5 +109,5 @@ Manual one-time taps that may still be needed on HyperOS:
   also send `ALARM OFF:;` on the CP TestShell (cilogg action 224).
 - Muting the uplink (`mute`) does NOT block the injected soundtrack — injection
   enters the TX path after the mic mute (proven on the dtmf_apk predecessor).
-- The old `com.essence.dtmftester` APK (Tools/dtmf_apk in CP_ESP32) is
+- The old `com.dm17ryk.dtmftester` APK (Tools/dtmf_apk in CP_ESP32) is
   superseded by CallBot but kept intact for the legacy Poco F1 phone.
