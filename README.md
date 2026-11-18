@@ -1,7 +1,7 @@
 # CallBot — bench call-debug dialer
 
 Fully ADB-controllable Android dialer app (`com.dm17ryk.callbot`) used to debug
-CP (C8000/C7000) emergency voice calls. Replaces fragile `adb input keyevent`
+voice calls. Replaces fragile `adb input keyevent`
 control with real Telecom APIs, adds in-call audio injection ("person talking"
 simulation), call recording, and a live GUI event log.
 
@@ -69,8 +69,6 @@ in-call AEC (the phone's own speaker output is the AEC reference).
 phone** — external audio passes the AEC like a real person:
 `python Tools/callbot_driver.py play-pc talk.mp3 --talk 4000 --pause 1500` / `stop-pc`.
 
-Full matrix: CP_ESP32 `docs/findings/CALLBOT-AUDIO-PATHS-2026-07-22.md`.
-
 ## Build
 
 Toolchain (already provisioned on the bench PC):
@@ -102,12 +100,3 @@ That script does, idempotently:
 Manual one-time taps that may still be needed on HyperOS:
 - Security app → Autostart → enable CallBot
 - Battery saver → No restrictions for CallBot
-
-## Bench notes
-
-- **LTE call end rule:** hanging up on the phone does NOT cancel the CP alarm —
-  also send `ALARM OFF:;` on the CP TestShell (cilogg action 224).
-- Muting the uplink (`mute`) does NOT block the injected soundtrack — injection
-  enters the TX path after the mic mute (proven on the dtmf_apk predecessor).
-- The old `com.dm17ryk.dtmftester` APK (Tools/dtmf_apk in CP_ESP32) is
-  superseded by CallBot but kept intact for the legacy Poco F1 phone.
